@@ -37,22 +37,15 @@
 #     return {"access_token": token, "token_type": "bearer"}
 
 # ______test__________
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.schemas import  schemas
-from app.models import  models
+from app.schemas import schemas
+from app.models import models
 from app.utils import utils
-from app.database import SessionLocal
+from datetime import timedelta
+from app.database import get_db
 
 router = APIRouter()
-
-# Dependency pour la DB
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 @router.post("/register", response_model=schemas.UserResponse)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -71,6 +64,14 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
 def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if not db_user or not utils.verify_password(user.password, db_user.password):
-        raise HTTPException(status_code=401, detail="Identifiants invalides")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Identifiants invalides",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     
-    return {"message": "Connexion réussie", "user_id": db_user.id}
+    access_token_expires = timedelta(minutes=30)
+    access_token = utils.create_access_token(
+        data={"sub": db_user.email}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}

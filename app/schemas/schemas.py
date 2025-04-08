@@ -15,6 +15,8 @@
 
 
 from pydantic import BaseModel, EmailStr
+from datetime import datetime
+from typing import Optional
 
 class UserCreate(BaseModel):
     username: str
@@ -31,6 +33,23 @@ class UserResponse(BaseModel):
     email: EmailStr
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+class EventCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    date: datetime
+    location: str
+
+class EventResponse(BaseModel):
+    id: int
+    title: str
+    description: Optional[str]
+    date: datetime
+    location: str
+    organizer_id: int
+
+    class Config:
+        from_attributes = True
 
 
