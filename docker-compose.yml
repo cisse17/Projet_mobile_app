@@ -21,5 +21,18 @@ services:
     ports:
       - "8080:8080"
 
+  api:
+    build: .
+    container_name: musicapp_api
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/musicapp
+
 volumes:
   db_data:
