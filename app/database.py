@@ -1,4 +1,3 @@
-
 # test
 # from dotenv import load_dotenv
 # load_dotenv()
@@ -29,7 +28,15 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 print("👉 DATABASE_URL:", DATABASE_URL)
 
-engine = create_engine(DATABASE_URL)
+# Ajout de paramètres de connexion pour plus de robustesse
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,  # Vérifie la connexion avant de l'utiliser
+    pool_recycle=300,    # Recycle les connexions après 5 minutes
+    pool_timeout=30,     # Timeout de 30 secondes pour obtenir une connexion
+    max_overflow=10      # Nombre maximum de connexions supplémentaires
+)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 

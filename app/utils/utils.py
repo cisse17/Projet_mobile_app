@@ -53,6 +53,14 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         raise credentials_exception
     return user
 
+def authenticate_user(db: Session, email: str, password: str):
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        return False
+    if not verify_password(password, user.password):
+        return False
+    return user
+
 # test
 # from passlib.context import CryptContext
 
