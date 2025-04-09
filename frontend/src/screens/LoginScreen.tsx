@@ -16,8 +16,10 @@ const LoginScreen = ({ navigation }: any) => {
   const [rememberMe, setRememberMe] = useState(false);
 
   const handleLogin = () => {
-    // Implement login logic here
+    // TODO: Implement actual login logic here
     console.log('Login attempt with:', email, password);
+    // Redirect to main app after successful login
+    navigation.replace('MainApp');
   };
 
   return (
@@ -27,16 +29,31 @@ const LoginScreen = ({ navigation }: any) => {
         style={styles.container}
       >
         <View style={styles.content}>
-          <Text style={styles.title}>MusiConnect</Text>
-          <Text style={styles.subtitle}>
-            Create an account or log in to explore about our app
-          </Text>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.backButtonText}>←</Text>
+          </TouchableOpacity>
+
+          <View style={styles.header}>
+            <Text style={styles.logo}>♪</Text>
+            <Text style={styles.logoText}>MusiConnect</Text>
+          </View>
+
+          <View style={styles.main}>
+            <Text style={styles.title}>Get Started now</Text>
+            <Text style={styles.subtitle}>
+              Create an account or log in to explore about our app
+            </Text>
+          </View>
 
           <View style={styles.form}>
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
                 placeholder="Email"
+                placeholderTextColor="#FFFFFF80"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -48,44 +65,25 @@ const LoginScreen = ({ navigation }: any) => {
               <TextInput
                 style={styles.input}
                 placeholder="Password"
+                placeholderTextColor="#FFFFFF80"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
               />
             </View>
 
-            <View style={styles.optionsRow}>
-              <TouchableOpacity
-                style={styles.checkboxContainer}
-                onPress={() => setRememberMe(!rememberMe)}
-              >
-                <View style={[styles.checkbox, rememberMe && styles.checked]} />
-                <Text style={styles.checkboxLabel}>Remember me</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-                <Text style={styles.forgotPassword}>Forgot Password?</Text>
-              </TouchableOpacity>
-            </View>
-
             <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-              <Text style={styles.loginButtonText}>Log In</Text>
+              <Text style={styles.loginButtonText}>Se connecter</Text>
             </TouchableOpacity>
 
-            <View style={styles.divider}>
-              <View style={styles.line} />
-              <Text style={styles.orText}>Or login with</Text>
-              <View style={styles.line} />
-            </View>
-
-            <View style={styles.socialButtons}>
-              <TouchableOpacity style={styles.socialButton}>
-                <Text style={styles.socialButtonText}>Google</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.socialButton}>
-                <Text style={styles.socialButtonText}>Apple</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity 
+              style={styles.registerLink}
+              onPress={() => navigation.navigate('Register')}
+            >
+              <Text style={styles.registerLinkText}>
+                Pas encore de compte ? Inscrivez-vous
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -96,25 +94,53 @@ const LoginScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1E1B33',
   },
   content: {
     flex: 1,
     padding: 24,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 20,
+  },
+  backButtonText: {
+    fontSize: 24,
+    color: '#FFFFFF',
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 48,
+  },
+  logo: {
+    fontSize: 48,
+    color: '#00A693',
+    marginBottom: 8,
+  },
+  logoText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#00A693',
+  },
+  main: {
+    alignItems: 'center',
+    marginBottom: 32,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    marginBottom: 8,
+    color: '#FFFFFF',
+    marginBottom: 16,
     textAlign: 'center',
-    color: '#00A693',
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: '#FFFFFF99',
     textAlign: 'center',
-    marginBottom: 32,
+    paddingHorizontal: 24,
   },
   form: {
     width: '100%',
@@ -124,84 +150,36 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: '#E8E8E8',
-    borderRadius: 8,
+    borderColor: '#FFFFFF40',
+    borderRadius: 12,
     padding: 16,
     fontSize: 16,
-  },
-  optionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: '#00A693',
-    marginRight: 8,
-  },
-  checked: {
-    backgroundColor: '#00A693',
-  },
-  checkboxLabel: {
-    fontSize: 14,
-    color: '#333',
-  },
-  forgotPassword: {
-    fontSize: 14,
-    color: '#00A693',
+    color: '#FFFFFF',
+    backgroundColor: '#FFFFFF10',
   },
   loginButton: {
     backgroundColor: '#00A693',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 16,
     alignItems: 'center',
-    marginBottom: 24,
+    marginTop: 24,
+    marginBottom: 16,
+    height: 56,
+    justifyContent: 'center',
   },
   loginButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
-  divider: {
-    flexDirection: 'row',
+  registerLink: {
     alignItems: 'center',
-    marginBottom: 24,
+    padding: 16,
   },
-  line: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E8E8E8',
-  },
-  orText: {
-    marginHorizontal: 16,
-    color: '#666',
+  registerLinkText: {
+    color: '#FFFFFF',
     fontSize: 14,
-  },
-  socialButtons: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 16,
-  },
-  socialButton: {
-    width: 120,
-    height: 48,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  socialButtonText: {
-    fontSize: 14,
-    color: '#333',
+    textDecorationLine: 'underline',
   },
 });
 
