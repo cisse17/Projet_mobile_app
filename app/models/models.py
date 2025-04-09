@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Boolean, event
 from sqlalchemy.orm import relationship, validates
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from app.database import Base
 import re
 
@@ -59,8 +59,6 @@ class Event(Base):
 
     @validates('date')
     def validate_date(self, key, date):
-        if date < datetime.utcnow():
-            raise ValueError("La date de l'événement ne peut pas être dans le passé")
         return date
 
     @classmethod
