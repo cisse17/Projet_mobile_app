@@ -86,6 +86,18 @@ POST /login
 **Erreurs possibles:**
 - 401 Unauthorized: Identifiants invalides
 
+### Déconnexion
+```http
+POST /auth/logout
+Authorization: Bearer <token>
+```
+
+### Récupérer les informations de l'utilisateur connecté
+```http
+GET /auth/me
+Authorization: Bearer <token>
+```
+
 ### Gestion des Utilisateurs
 
 #### Récupérer tous les utilisateurs
@@ -195,6 +207,72 @@ GET /events/{event_id}
 
 **Erreurs possibles:**
 - 404 Not Found: Événement non trouvé
+
+## Messagerie
+
+### Envoyer un message
+```http
+POST /messages/
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "content": "Bonjour !",
+    "receiver_id": 2
+}
+```
+
+### Récupérer les messages reçus
+```http
+GET /messages/received?skip=0&limit=100
+Authorization: Bearer <token>
+```
+
+### Récupérer les messages envoyés
+```http
+GET /messages/sent?skip=0&limit=100
+Authorization: Bearer <token>
+```
+
+### Marquer un message comme lu
+```http
+PUT /messages/{message_id}/read
+Authorization: Bearer <token>
+```
+
+## Messagerie en Temps Réel (WebSocket)
+
+### Connexion WebSocket
+```javascript
+const socket = new WebSocket(`ws://your-api-url/ws/${token}`);
+
+socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === 'new_message') {
+        // Traiter le nouveau message
+        console.log('Nouveau message reçu:', data.message);
+    }
+};
+
+socket.onclose = (event) => {
+    console.log('Connexion WebSocket fermée:', event.code, event.reason);
+};
+```
+
+### Format des Messages WebSocket
+```json
+{
+    "type": "new_message",
+    "message": {
+        "id": 123,
+        "content": "Bonjour !",
+        "created_at": "2024-03-14T12:00:00Z",
+        "sender_id": 1,
+        "receiver_id": 2,
+        "is_read": false
+    }
+}
+```
 
 ## Structure du Projet
 
