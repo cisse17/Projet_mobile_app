@@ -1,167 +1,194 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
-  TextInput,
-  TouchableOpacity,
-  Image,
+  ActivityIndicator,
   ScrollView,
+  TouchableOpacity,
+  Alert,
+  Image,
 } from 'react-native';
+import authService, { UserProfile } from '../services/authService';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
-const ProfileScreen = () => {
-  const [profileData, setProfileData] = useState({
-    name: 'Loisbecket@gmail.com',
-    description: 'Loisbecket@gmail.com',
-    instrumentsPlayed: 'Loisbecket@gmail.com',
-    musicalInstruments: '********',
-  });
+export default function ProfileScreen() {
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const navigation = useNavigation();
 
-  const handleValidate = () => {
-    // TODO: Implement profile update logic
-    console.log('Profile data:', profileData);
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      setLoading(true);
+      const userData = await authService.getProfile();
+      setProfile(userData);
+    } catch (error: any) {
+      Alert.alert(
+        'Erreur',
+        error.response?.data?.detail || 'Impossible de charger le profil'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+      // Rediriger vers la page de connexion
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' as never }],
+      });
+    } catch (error) {
+      Alert.alert('Erreur', 'Impossible de se déconnecter');
+    }
+  };
+
+  const handleEditAvatar = () => {
+    // TODO: Implémenter la modification de l'avatar
+    Alert.alert('Info', 'La modification de l\'avatar sera disponible prochainement');
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.content}>
-          <View style={styles.avatarContainer}>
-            <Image
-              source={{
-                uri: 'https://static.vecteezy.com/system/resources/previews/008/442/086/non_2x/illustration-of-human-icon-user-symbol-icon-modern-design-on-blank-background-free-vector.jpg'
-              }}
-              style={styles.avatar}
-            />
-            <TouchableOpacity style={styles.editAvatarButton}>
-              <Ionicons name="camera-outline" size={24} color="#666" />
-            </TouchableOpacity>
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Mon Profil</Text>
+      </View>
+
+      <View style={styles.avatarContainer}>
+        <Image
+          source={{
+            uri: 'https://static.vecteezy.com/system/resources/previews/008/442/086/non_2x/illustration-of-human-icon-user-symbol-icon-modern-design-on-blank-background-free-vector.jpg'
+          }}
+          style={styles.avatar}
+        />
+        <TouchableOpacity 
+          style={styles.editAvatarButton}
+          onPress={handleEditAvatar}
+        >
+          <Ionicons name="camera-outline" size={24} color="#666" />
+        </TouchableOpacity>
+      </View>
+
+      {profile && (
+        <View style={styles.profileInfo}>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Nom d'utilisateur</Text>
+            <Text style={styles.value}>{profile.username}</Text>
           </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Nom de profil</Text>
-            <TextInput
-              style={styles.input}
-              value={profileData.name}
-              onChangeText={(text) => setProfileData({ ...profileData, name: text })}
-            />
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Email</Text>
+            <Text style={styles.value}>{profile.email}</Text>
           </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Description</Text>
-            <TextInput
-              style={[styles.input, styles.multilineInput]}
-              value={profileData.description}
-              onChangeText={(text) => setProfileData({ ...profileData, description: text })}
-              multiline
-              numberOfLines={3}
-            />
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Membre depuis</Text>
+            <Text style={styles.value}>
+              {new Date(profile.created_at).toLocaleDateString('fr-FR')}
+            </Text>
           </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Instruments joués</Text>
-            <TextInput
-              style={styles.input}
-              value={profileData.instrumentsPlayed}
-              onChangeText={(text) => setProfileData({ ...profileData, instrumentsPlayed: text })}
-            />
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Instruments musicales</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={[styles.input, styles.passwordInput]}
-                value={profileData.musicalInstruments}
-                onChangeText={(text) => setProfileData({ ...profileData, musicalInstruments: text })}
-                secureTextEntry
-              />
-              <TouchableOpacity style={styles.eyeIcon}>
-                <Ionicons name="eye-outline" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <TouchableOpacity style={styles.validateButton} onPress={handleValidate}>
-            <Text style={styles.validateButtonText}>Valider</Text>
-          </TouchableOpacity>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      )}
+
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <Text style={styles.logoutButtonText}>Se déconnecter</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#fff',
   },
-  scrollView: {
+  loadingContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  content: {
+  header: {
     padding: 20,
+    backgroundColor: '#f8f9fa',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#212529',
   },
   avatarContainer: {
     alignItems: 'center',
-    marginBottom: 30,
+    marginVertical: 20,
+    position: 'relative',
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     backgroundColor: '#E1E1E1',
   },
   editAvatarButton: {
     position: 'absolute',
-    right: 10,
-    top: 10,
+    bottom: 0,
+    right: '35%',
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  formGroup: {
+  profileInfo: {
+    padding: 20,
+  },
+  infoRow: {
     marginBottom: 20,
   },
   label: {
-    fontSize: 16,
-    color: '#333',
-    marginBottom: 8,
+    fontSize: 14,
+    color: '#6c757d',
+    marginBottom: 5,
   },
-  input: {
-    backgroundColor: '#FFF',
+  value: {
+    fontSize: 16,
+    color: '#212529',
+    fontWeight: '500',
+  },
+  logoutButton: {
+    margin: 20,
+    backgroundColor: '#dc3545',
+    padding: 15,
     borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#E1E1E1',
-  },
-  multilineInput: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  passwordContainer: {
-    flexDirection: 'row',
     alignItems: 'center',
   },
-  passwordInput: {
-    flex: 1,
-  },
-  eyeIcon: {
-    position: 'absolute',
-    right: 12,
-  },
-  validateButton: {
-    backgroundColor: '#00A693',
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  validateButtonText: {
-    color: '#FFF',
+  logoutButtonText: {
+    color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
-});
-
-export default ProfileScreen; 
+}); 

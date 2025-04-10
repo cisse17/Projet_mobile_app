@@ -11,12 +11,38 @@ import HomeScreen from '../screens/HomeScreen';
 import SearchScreen from '../screens/SearchScreen';
 import EventScreen from '../screens/EventScreen';
 import CreateEventScreen from '../screens/CreateEventScreen';
-import MessageScreen from '../screens/MessageScreen';
+import ConversationsScreen from '../screens/ConversationsScreen';
 import ChatDetailScreen from '../screens/ChatDetailScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import SelectUserScreen from '../screens/SelectUserScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+
+const MessagesStack = () => {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen
+        name="ConversationsMain"
+        component={ConversationsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SelectUser"
+        component={SelectUserScreen}
+        options={{
+          headerTitle: 'Nouveau message',
+          headerShown: true,
+        }}
+      />
+      <Stack.Screen
+        name="ChatDetail"
+        component={ChatDetailScreen}
+        options={{ headerShown: false }}
+      />
+    </Stack.Navigator>
+  );
+};
 
 const TabNavigator = () => {
   return (
@@ -26,24 +52,16 @@ const TabNavigator = () => {
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
 
-          switch (route.name) {
-            case 'Home':
-              iconName = focused ? 'home' : 'home-outline';
-              break;
-            case 'Search':
-              iconName = focused ? 'search' : 'search-outline';
-              break;
-            case 'Calendar':
-              iconName = focused ? 'calendar' : 'calendar-outline';
-              break;
-            case 'Messages':
-              iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
-              break;
-            case 'Profile':
-              iconName = focused ? 'person' : 'person-outline';
-              break;
-            default:
-              iconName = 'help';
+          if (route.name === 'Home') {
+            iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'Search') {
+            iconName = focused ? 'search' : 'search-outline';
+          } else if (route.name === 'Calendar') {
+            iconName = focused ? 'calendar' : 'calendar-outline';
+          } else if (route.name === 'Messages') {
+            iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
+          } else if (route.name === 'Profile') {
+            iconName = focused ? 'person' : 'person-outline';
           }
 
           return <Ionicons name={iconName as any} size={size} color={color} />;
@@ -55,7 +73,7 @@ const TabNavigator = () => {
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Accueil' }} />
       <Tab.Screen name="Search" component={SearchScreen} options={{ title: 'Rechercher' }} />
       <Tab.Screen name="Calendar" component={EventScreen} options={{ title: 'Agenda' }} />
-      <Tab.Screen name="Messages" component={MessageScreen} options={{ title: 'Messages' }} />
+      <Tab.Screen name="Messages" component={MessagesStack} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profil' }} />
     </Tab.Navigator>
   );
@@ -74,7 +92,6 @@ const AppNavigator = () => {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="CreateEvent" component={CreateEventScreen} />
-        <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
         <Stack.Screen 
           name="MainApp" 
           component={TabNavigator}

@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Boolean, event
 from sqlalchemy.orm import relationship, validates
 from datetime import datetime
+import pytz
 from app.database import Base
 import re
 
@@ -52,15 +53,16 @@ class Event(Base):
     description = Column(Text, nullable=True)
     date = Column(DateTime, nullable=False)
     location = Column(String(200), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(pytz.UTC))
     organizer_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     
     organizer = relationship("User", back_populates="events")
 
     @validates('date')
     def validate_date(self, key, date):
-        if date < datetime.utcnow():
-            raise ValueError("La date de l'événement ne peut pas être dans le passé")
+        # Si la date n'a pas de timezone, on considère qu'elle est en UTC
+        if date.tzinfo is None:
+            date = pytz.UTC.localize(date)
         return date
 
     @classmethod

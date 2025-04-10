@@ -7,10 +7,12 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { createEvent } from '../services/eventService';
 
 const CreateEventScreen = () => {
   const navigation = useNavigation();
@@ -26,6 +28,7 @@ const CreateEventScreen = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(false);
@@ -48,10 +51,32 @@ const CreateEventScreen = () => {
     }
   };
 
-  const handleCreateEvent = () => {
-    // Implement event creation logic here
-    console.log('Event data:', eventData);
-    navigation.goBack();
+  const handleSubmit = async () => {
+    if (!eventData.title || !eventData.description || !eventData.location) {
+      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const eventDataToSend = {
+        title: eventData.title,
+        description: eventData.description,
+        location: eventData.location,
+        date: eventData.date.toISOString(),
+      };
+
+      await createEvent(eventDataToSend);
+      Alert.alert('Succès', 'Événement créé avec succès');
+      navigation.goBack();
+    } catch (error: any) {
+      Alert.alert(
+        'Erreur',
+        error.response?.data?.detail || 'Une erreur est survenue lors de la création de l\'événement'
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -61,8 +86,14 @@ const CreateEventScreen = () => {
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Créer un évènement</Text>
-        <TouchableOpacity onPress={handleCreateEvent}>
-          <Text style={styles.createButton}>Créer</Text>
+        <TouchableOpacity
+          style={styles.createButton}
+          onPress={handleSubmit}
+          disabled={isLoading}
+        >
+          <Text style={styles.createButtonText}>
+            {isLoading ? 'Création en cours...' : 'Créer'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -105,7 +136,7 @@ const CreateEventScreen = () => {
             style={styles.dateButton}
             onPress={() => setShowDatePicker(true)}
           >
-            <Text>{eventData.date.toLocaleDateString()}</Text>
+            <Text style={styles.dateButtonText}>{eventData.date.toLocaleDateString()}</Text>
             <Ionicons name="calendar-outline" size={20} color="#666" />
           </TouchableOpacity>
         </View>
@@ -117,7 +148,7 @@ const CreateEventScreen = () => {
               style={styles.dateButton}
               onPress={() => setShowStartTimePicker(true)}
             >
-              <Text>{eventData.startTime.toLocaleTimeString().slice(0, 5)}</Text>
+              <Text style={styles.dateButtonText}>{eventData.startTime.toLocaleTimeString().slice(0, 5)}</Text>
               <Ionicons name="time-outline" size={20} color="#666" />
             </TouchableOpacity>
           </View>
@@ -128,7 +159,7 @@ const CreateEventScreen = () => {
               style={styles.dateButton}
               onPress={() => setShowEndTimePicker(true)}
             >
-              <Text>{eventData.endTime.toLocaleTimeString().slice(0, 5)}</Text>
+              <Text style={styles.dateButtonText}>{eventData.endTime.toLocaleTimeString().slice(0, 5)}</Text>
               <Ionicons name="time-outline" size={20} color="#666" />
             </TouchableOpacity>
           </View>
@@ -188,6 +219,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  createButtonText: {
+    color: '#00A693',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   content: {
     flex: 1,
     padding: 16,
@@ -222,6 +258,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E9ECEF',
+  },
+  dateButtonText: {
+    fontSize: 16,
+    color: '#333',
   },
   timeContainer: {
     flexDirection: 'row',

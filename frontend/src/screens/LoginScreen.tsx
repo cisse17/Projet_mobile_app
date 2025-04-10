@@ -7,19 +7,47 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import authService from '../services/authService';
 
 const LoginScreen = ({ navigation }: any) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    // TODO: Implement actual login logic here
-    console.log('Login attempt with:', email, password);
-    // Redirect to main app after successful login
-    navigation.replace('MainApp');
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await authService.login({ email, password });
+      navigation.replace('MainApp');
+    } catch (error: any) {
+      console.error('Login error:', error);
+      let errorMessage = 'Une erreur est survenue lors de la connexion';
+      
+      if (error.response) {
+        // Erreur de réponse du serveur
+        if (error.response.status === 401) {
+          errorMessage = 'Email ou mot de passe incorrect';
+        } else if (error.response.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+      } else if (error.request) {
+        // Erreur de connexion au serveur
+        errorMessage = 'Impossible de se connecter au serveur';
+      }
+      
+      Alert.alert('Erreur de connexion', errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -42,9 +70,9 @@ const LoginScreen = ({ navigation }: any) => {
           </View>
 
           <View style={styles.main}>
-            <Text style={styles.title}>Get Started now</Text>
+            <Text style={styles.title}>Connexion</Text>
             <Text style={styles.subtitle}>
-              Create an account or log in to explore about our app
+              Connectez-vous pour accéder à votre compte
             </Text>
           </View>
 
@@ -58,27 +86,38 @@ const LoginScreen = ({ navigation }: any) => {
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                editable={!loading}
               />
             </View>
 
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
-                placeholder="Password"
+                placeholder="Mot de passe"
                 placeholderTextColor="#FFFFFF80"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
+                editable={!loading}
               />
             </View>
 
-            <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-              <Text style={styles.loginButtonText}>Se connecter</Text>
+            <TouchableOpacity 
+              style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.loginButtonText}>Se connecter</Text>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity 
               style={styles.registerLink}
               onPress={() => navigation.navigate('Register')}
+              disabled={loading}
             >
               <Text style={styles.registerLinkText}>
                 Pas encore de compte ? Inscrivez-vous
@@ -166,6 +205,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     height: 56,
     justifyContent: 'center',
+  },
+  loginButtonDisabled: {
+    opacity: 0.7,
   },
   loginButtonText: {
     color: '#FFFFFF',

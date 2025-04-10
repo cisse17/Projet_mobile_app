@@ -8,20 +8,50 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import authService from '../services/authService';
 
 const RegisterScreen = ({ navigation }: any) => {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleRegister = () => {
-    // TODO: Implement actual registration logic here
-    console.log('Register attempt with:', { firstName, lastName, email, password });
-    // Redirect to main app after successful registration
-    navigation.replace('MainApp');
+  const handleRegister = async () => {
+    if (!username || !email || !password) {
+      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await authService.register({
+        username,
+        email,
+        password,
+      });
+      navigation.replace('MainApp');
+    } catch (error: any) {
+      console.error('Register error:', error);
+      let errorMessage = 'Une erreur est survenue lors de l\'inscription';
+      
+      if (error.response) {
+        if (error.response.status === 400) {
+          errorMessage = 'Email ou nom d\'utilisateur déjà utilisé';
+        } else if (error.response.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+      } else if (error.request) {
+        errorMessage = 'Impossible de se connecter au serveur';
+      }
+      
+      Alert.alert('Erreur d\'inscription', errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -45,72 +75,69 @@ const RegisterScreen = ({ navigation }: any) => {
             </View>
 
             <View style={styles.main}>
-              <Text style={styles.title}>Get Started now</Text>
+              <Text style={styles.title}>Inscription</Text>
               <Text style={styles.subtitle}>
-                Create an account or log in to explore about our app
+                Créez votre compte pour rejoindre la communauté
               </Text>
             </View>
 
             <View style={styles.form}>
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>Nom</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Entrez votre nom"
+                  placeholder="Nom d'utilisateur"
                   placeholderTextColor="#FFFFFF80"
-                  value={lastName}
-                  onChangeText={setLastName}
-                  autoCapitalize="words"
+                  value={username}
+                  onChangeText={setUsername}
+                  autoCapitalize="none"
+                  editable={!loading}
                 />
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>Prénom</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Entrez votre prénom"
-                  placeholderTextColor="#FFFFFF80"
-                  value={firstName}
-                  onChangeText={setFirstName}
-                  autoCapitalize="words"
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Email</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Entrez votre email"
+                  placeholder="Email"
                   placeholderTextColor="#FFFFFF80"
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  editable={!loading}
                 />
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>Password</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Créez votre mot de passe"
+                  placeholder="Mot de passe"
                   placeholderTextColor="#FFFFFF80"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
+                  editable={!loading}
                 />
               </View>
 
-              <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
-                <Text style={styles.registerButtonText}>Continuer</Text>
+              <TouchableOpacity 
+                style={[styles.registerButton, loading && styles.registerButtonDisabled]}
+                onPress={handleRegister}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.registerButtonText}>S'inscrire</Text>
+                )}
               </TouchableOpacity>
 
               <TouchableOpacity 
                 style={styles.loginLink}
                 onPress={() => navigation.navigate('Login')}
+                disabled={loading}
               >
                 <Text style={styles.loginLinkText}>
-                  Déjà un compte ? Connectez Vous
+                  Déjà un compte ? Connectez-vous
                 </Text>
               </TouchableOpacity>
             </View>
@@ -179,12 +206,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   inputContainer: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    marginBottom: 8,
+    marginBottom: 16,
   },
   input: {
     borderWidth: 1,
@@ -204,6 +226,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     height: 56,
     justifyContent: 'center',
+  },
+  registerButtonDisabled: {
+    opacity: 0.7,
   },
   registerButtonText: {
     color: '#FFFFFF',
