@@ -14,6 +14,7 @@ import CreateEventScreen from '../screens/CreateEventScreen';
 import MessageScreen from '../screens/MessageScreen';
 import ChatDetailScreen from '../screens/ChatDetailScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import UserDetailScreen from '../screens/UserDetailScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -75,6 +76,7 @@ const AppNavigator = () => {
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="CreateEvent" component={CreateEventScreen} />
         <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
+        <Stack.Screen name="UserDetail" component={UserDetailScreen} />
         <Stack.Screen 
           name="MainApp" 
           component={TabNavigator}

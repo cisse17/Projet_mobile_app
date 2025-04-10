@@ -8,10 +8,21 @@ import {
   SafeAreaView,
   Dimensions,
   Alert,
+  FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
+import api from '../config/api';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+type RootStackParamList = {
+  UserDetail: { userId: number };
+};
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 interface LocationState {
   coords: {
@@ -20,11 +31,32 @@ interface LocationState {
   };
 }
 
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  description?: string;
+  instruments_played?: string;
+}
+
+const EmptyListComponent = ({ searchQuery, isSearching }: { searchQuery: string, isSearching: boolean }) => {
+  if (isSearching) return null;
+  
+  return (
+    <Text style={styles.emptyResult}>
+      Aucun musicien trouvé pour "{searchQuery}"
+    </Text>
+  );
+};
+
 const SearchScreen = () => {
   const [showMap, setShowMap] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [location, setLocation] = useState<LocationState | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const navigation = useNavigation<NavigationProp>();
 
   useEffect(() => {
     (async () => {
@@ -38,6 +70,41 @@ const SearchScreen = () => {
       setLocation(location as LocationState);
     })();
   }, []);
+
+  // Recherche d'utilisateurs avec debounce
+  useEffect(() => {
+    if (searchQuery.length < 1) {
+      setUsers([]);
+      setIsSearching(false);
+      return;
+    }
+
+    const searchTimeout = setTimeout(async () => {
+      try {
+        setIsSearching(true);
+        console.log('Envoi de la requête de recherche:', searchQuery);
+        
+        const response = await api.get('/users/search', {
+          params: { query: searchQuery.trim() },
+          timeout: 5000,
+        });
+        
+        console.log('Réponse de la recherche:', response.data);
+        setUsers(Array.isArray(response.data) ? response.data : []);
+      } catch (error: any) {
+        console.error('Erreur de recherche:', {
+          message: error.message,
+          status: error.response?.status,
+          data: error.response?.data
+        });
+        setUsers([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(searchTimeout);
+  }, [searchQuery]);
 
   // Exemple de données de musiciens
   const musicians = [
@@ -54,6 +121,27 @@ const SearchScreen = () => {
     setShowMap(true);
   };
 
+  const handleUserSelect = (user: User) => {
+    navigation.navigate('UserDetail', { userId: user.id });
+  };
+
+  const renderUserItem = ({ item }: { item: User }) => (
+    <TouchableOpacity 
+      style={styles.userItem} 
+      onPress={() => handleUserSelect(item)}
+    >
+      <View style={styles.userAvatar}>
+        <Ionicons name="person" size={24} color="#666" />
+      </View>
+      <View style={styles.userInfo}>
+        <Text style={styles.username}>{item.username}</Text>
+        {item.instruments_played && (
+          <Text style={styles.instruments}>{item.instruments_played}</Text>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -68,14 +156,30 @@ const SearchScreen = () => {
           <Ionicons name="search-outline" size={20} color="#666" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search"
+            placeholder="Rechercher un musicien..."
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
+          {isSearching && (
+            <ActivityIndicator size="small" color="#00A693" style={styles.searchLoader} />
+          )}
         </View>
       </View>
 
-      {!showMap ? (
+      {searchQuery.length >= 2 ? (
+        <FlatList
+          data={users}
+          renderItem={renderUserItem}
+          keyExtractor={(item) => item.id.toString()}
+          style={styles.userList}
+          ListEmptyComponent={
+            <EmptyListComponent 
+              searchQuery={searchQuery}
+              isSearching={isSearching}
+            />
+          }
+        />
+      ) : !showMap ? (
         <View style={styles.emptyStateContainer}>
           <Text style={styles.emptyStateText}>
             Chercher un musicien grâce à{'\n'}
@@ -230,6 +334,47 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     backgroundColor: '#FFF',
+  },
+  userList: {
+    flex: 1,
+    backgroundColor: '#FFF',
+  },
+  userItem: {
+    flexDirection: 'row',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+    alignItems: 'center',
+  },
+  userAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F0F0F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  userInfo: {
+    flex: 1,
+  },
+  username: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#000',
+  },
+  instruments: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  emptyResult: {
+    padding: 16,
+    textAlign: 'center',
+    color: '#666',
+  },
+  searchLoader: {
+    marginLeft: 8,
   },
 });
 

@@ -7,19 +7,50 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import api from '../config/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = ({ navigation }: any) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = () => {
-    // TODO: Implement actual login logic here
-    console.log('Login attempt with:', email, password);
-    // Redirect to main app after successful login
-    navigation.replace('MainApp');
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      console.log('Tentative de connexion avec:', {
+        url: `${api.defaults.baseURL}/auth/login`,
+        data: { email, password }
+      });
+
+      const response = await api.post('/auth/login', {
+        email,
+        password,
+      });
+
+      console.log('Réponse du serveur:', response.data);
+
+      if (response.data.access_token) {
+        await AsyncStorage.setItem('token', response.data.access_token);
+        navigation.replace('MainApp');
+      }
+    } catch (error: any) {
+      Alert.alert(
+        'Erreur de connexion',
+        error.response?.data?.detail || 'Identifiants incorrects'
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
