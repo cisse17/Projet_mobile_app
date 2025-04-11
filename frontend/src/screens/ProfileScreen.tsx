@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,21 +8,115 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import api from '../config/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+
+type RootStackParamList = {
+  Welcome: undefined;
+};
+
+type NavigationType = NavigationProp<RootStackParamList>;
+
+interface UserProfile {
+  id: number;
+  username: string;
+  email: string;
+  description?: string;
+  instruments_played?: string;
+  avatar_url?: string;
+}
 
 const ProfileScreen = () => {
-  const [profileData, setProfileData] = useState({
-    name: 'Loisbecket@gmail.com',
-    description: 'Loisbecket@gmail.com',
-    instrumentsPlayed: 'Loisbecket@gmail.com',
-    musicalInstruments: '********',
+  const navigation = useNavigation<NavigationType>();
+  const [isLoading, setIsLoading] = useState(true);
+  const [profileData, setProfileData] = useState<UserProfile>({
+    id: 0,
+    username: '',
+    email: '',
+    description: '',
+    instruments_played: '',
+    avatar_url: 'https://static.vecteezy.com/system/resources/previews/008/442/086/non_2x/illustration-of-human-icon-user-symbol-icon-modern-design-on-blank-background-free-vector.jpg'
   });
 
-  const handleValidate = () => {
-    // TODO: Implement profile update logic
-    console.log('Profile data:', profileData);
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Erreur', 'Vous devez être connecté');
+        return;
+      }
+
+      const response = await api.get('/auth/me');
+      console.log('Données du profil:', response.data);
+      setProfileData({
+        ...profileData,
+        ...response.data,
+      });
+    } catch (error: any) {
+      Alert.alert(
+        'Erreur',
+        error.response?.data?.detail || 'Impossible de récupérer les informations du profil'
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const handleValidate = async () => {
+    try {
+      setIsLoading(true);
+      const response = await api.put('/users/me', {
+        email: profileData.email,
+        username: profileData.username,
+        description: profileData.description,
+        instruments_played: profileData.instruments_played,
+      });
+
+      if (response.data) {
+        Alert.alert('Succès', 'Profil mis à jour avec succès');
+      }
+    } catch (error: any) {
+      Alert.alert(
+        'Erreur',
+        error.response?.data?.detail || 'Impossible de mettre à jour le profil'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      // Supprimer le token
+      await AsyncStorage.removeItem('token');
+      // Réinitialiser l'état de l'API (header Authorization)
+      api.defaults.headers.common['Authorization'] = '';
+      // Rediriger vers l'écran de connexion
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Welcome' }],
+      });
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+      Alert.alert('Erreur', 'Impossible de se déconnecter');
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <Text>Chargement...</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -31,7 +125,7 @@ const ProfileScreen = () => {
           <View style={styles.avatarContainer}>
             <Image
               source={{
-                uri: 'https://static.vecteezy.com/system/resources/previews/008/442/086/non_2x/illustration-of-human-icon-user-symbol-icon-modern-design-on-blank-background-free-vector.jpg'
+                uri: profileData.avatar_url
               }}
               style={styles.avatar}
             />
@@ -44,8 +138,18 @@ const ProfileScreen = () => {
             <Text style={styles.label}>Nom de profil</Text>
             <TextInput
               style={styles.input}
-              value={profileData.name}
-              onChangeText={(text) => setProfileData({ ...profileData, name: text })}
+              value={profileData.username}
+              onChangeText={(text) => setProfileData({ ...profileData, username: text })}
+            />
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              style={styles.input}
+              value={profileData.email}
+              editable={false}
+              selectTextOnFocus={false}
             />
           </View>
 
@@ -57,6 +161,7 @@ const ProfileScreen = () => {
               onChangeText={(text) => setProfileData({ ...profileData, description: text })}
               multiline
               numberOfLines={3}
+              placeholder="Décrivez-vous en quelques mots..."
             />
           </View>
 
@@ -64,28 +169,46 @@ const ProfileScreen = () => {
             <Text style={styles.label}>Instruments joués</Text>
             <TextInput
               style={styles.input}
-              value={profileData.instrumentsPlayed}
-              onChangeText={(text) => setProfileData({ ...profileData, instrumentsPlayed: text })}
+              value={profileData.instruments_played}
+              onChangeText={(text) => setProfileData({ ...profileData, instruments_played: text })}
+              placeholder="Ex: Piano, Guitare, Batterie..."
             />
           </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Instruments musicales</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={[styles.input, styles.passwordInput]}
-                value={profileData.musicalInstruments}
-                onChangeText={(text) => setProfileData({ ...profileData, musicalInstruments: text })}
-                secureTextEntry
-              />
-              <TouchableOpacity style={styles.eyeIcon}>
-                <Ionicons name="eye-outline" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-          </View>
+          <TouchableOpacity 
+            style={[styles.validateButton, isLoading && styles.disabledButton]} 
+            onPress={handleValidate}
+            disabled={isLoading}
+          >
+            <Text style={styles.validateButtonText}>
+              {isLoading ? 'Mise à jour...' : 'Valider'}
+            </Text>
+          </TouchableOpacity>
 
-          <TouchableOpacity style={styles.validateButton} onPress={handleValidate}>
-            <Text style={styles.validateButtonText}>Valider</Text>
+          <View style={styles.separator} />
+
+          <TouchableOpacity 
+            style={styles.logoutButton}
+            onPress={() => {
+              Alert.alert(
+                'Déconnexion',
+                'Êtes-vous sûr de vouloir vous déconnecter ?',
+                [
+                  {
+                    text: 'Annuler',
+                    style: 'cancel',
+                  },
+                  {
+                    text: 'Déconnecter',
+                    onPress: handleLogout,
+                    style: 'destructive',
+                  },
+                ],
+              );
+            }}
+          >
+            <Ionicons name="log-out-outline" size={24} color="#FF3B30" />
+            <Text style={styles.logoutButtonText}>Se déconnecter</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -161,6 +284,34 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  disabledButton: {
+    opacity: 0.7,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#E1E1E1',
+    marginVertical: 20,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFF',
+    padding: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FF3B30',
+  },
+  logoutButtonText: {
+    color: '#FF3B30',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });
 

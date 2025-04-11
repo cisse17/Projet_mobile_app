@@ -8,20 +8,68 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import api from '../config/api';
 
 const RegisterScreen = ({ navigation }: any) => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleRegister = () => {
-    // TODO: Implement actual registration logic here
-    console.log('Register attempt with:', { firstName, lastName, email, password });
-    // Redirect to main app after successful registration
-    navigation.replace('MainApp');
+  const handleRegister = async () => {
+    if (!firstName || !lastName || !email || !password) {
+      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      return;
+    }
+
+    // Création du username en combinant prénom et nom
+    const username = `${firstName.trim()} ${lastName.trim()}`.trim();
+
+    // Vérification de la longueur du username
+    if (username.length < 2 || username.length > 50) {
+      Alert.alert('Erreur', 'Le nom complet doit faire entre 2 et 50 caractères');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      console.log('Tentative d\'inscription avec:', {
+        url: `${api.defaults.baseURL}/auth/register`,
+        data: { username, email, password }
+      });
+      
+      const response = await api.post('/auth/register', {
+        username,
+        email,
+        password,
+      });
+
+      console.log('Réponse du serveur:', response.data);
+
+      if (response.data) {
+        Alert.alert(
+          'Succès',
+          'Votre compte a été créé avec succès',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.navigate('Login'),
+            },
+          ]
+        );
+      }
+    } catch (error: any) {
+      Alert.alert(
+        'Erreur',
+        error.response?.data?.detail || 'Une erreur est survenue lors de l\'inscription'
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
