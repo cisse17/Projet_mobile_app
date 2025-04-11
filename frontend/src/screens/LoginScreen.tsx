@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import api from '../config/api';
+import { useAuth } from '../contexts/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = ({ navigation }: any) => {
@@ -18,6 +19,7 @@ const LoginScreen = ({ navigation }: any) => {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -40,10 +42,25 @@ const LoginScreen = ({ navigation }: any) => {
       console.log('Réponse du serveur:', response.data);
 
       if (response.data.access_token) {
-        await AsyncStorage.setItem('token', response.data.access_token);
+        // Récupérer les informations de l'utilisateur
+        const userResponse = await api.get('/auth/me', {
+          headers: {
+            Authorization: `Bearer ${response.data.access_token}`
+          }
+        });
+        
+        console.log('Informations utilisateur:', userResponse.data);
+        
+        // Stocker l'ID de l'utilisateur
+        await AsyncStorage.setItem('userId', userResponse.data.id.toString());
+        
+        // Connexion avec le token
+        await login(response.data.access_token);
+        
         navigation.replace('MainApp');
       }
     } catch (error: any) {
+      console.error('Erreur de connexion:', error);
       Alert.alert(
         'Erreur de connexion',
         error.response?.data?.detail || 'Identifiants incorrects'

@@ -40,6 +40,8 @@ class Token(BaseModel):
 class UserBase(BaseModel):
     email: EmailStr
     username: str
+    description: Optional[str] = None
+    instruments_played: Optional[str] = None
 
 class UserCreate(UserBase):
     password: str
@@ -49,7 +51,9 @@ class UserCreate(UserBase):
             "example": {
                 "email": "user@example.com",
                 "username": "johndoe",
-                "password": "strongpassword123"
+                "password": "strongpassword123",
+                "description": "Musicien passionné de jazz",
+                "instruments_played": "Piano, Saxophone"
             }
         }
 
@@ -76,6 +80,8 @@ class User(UserBase):
                 "id": 1,
                 "email": "user@example.com",
                 "username": "johndoe",
+                "description": "Musicien passionné de jazz",
+                "instruments_played": "Piano, Saxophone",
                 "created_at": "2024-03-14T12:00:00Z"
             }
         }
@@ -91,6 +97,8 @@ class UserResponse(UserBase):
                 "id": 1,
                 "email": "user@example.com",
                 "username": "johndoe",
+                "description": "Musicien passionné de jazz",
+                "instruments_played": "Piano, Saxophone",
                 "created_at": "2024-03-14T12:00:00Z"
             }
         }

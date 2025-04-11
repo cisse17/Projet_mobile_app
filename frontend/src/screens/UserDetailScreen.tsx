@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   TextInput,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../config/api';
@@ -19,14 +20,15 @@ interface User {
   email: string;
   description?: string;
   instruments_played?: string;
+  musical_influences?: string[];
+  location?: string;
+  avatar_url?: string;
 }
 
 const UserDetailScreen = ({ route, navigation }: any) => {
   const { userId } = route.params;
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [message, setMessage] = useState('');
-  const [isSending, setIsSending] = useState(false);
 
   useEffect(() => {
     fetchUserDetails();
@@ -43,26 +45,11 @@ const UserDetailScreen = ({ route, navigation }: any) => {
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!message.trim()) {
-      Alert.alert('Erreur', 'Veuillez entrer un message');
-      return;
-    }
-
-    try {
-      setIsSending(true);
-      await api.post('/messages/', {
-        content: message.trim(),
-        receiver_id: userId
-      });
-
-      Alert.alert('Succès', 'Message envoyé avec succès');
-      setMessage('');
-    } catch (error) {
-      Alert.alert('Erreur', 'Impossible d\'envoyer le message');
-    } finally {
-      setIsSending(false);
-    }
+  const handleNavigateToSendMessage = () => {
+    navigation.navigate('SendMessage', { 
+      receiverId: userId,
+      receiverName: user?.username 
+    });
   };
 
   if (isLoading) {
@@ -81,56 +68,67 @@ const UserDetailScreen = ({ route, navigation }: any) => {
     );
   }
 
+  const renderInstruments = () => {
+    if (!user.instruments_played) return null;
+    return user.instruments_played.split(',').map((instrument, index) => (
+      <View key={index} style={styles.tag}>
+        <Text style={styles.tagText}>{instrument.trim()}</Text>
+      </View>
+    ));
+  };
+
+  const renderMusicalInfluences = () => {
+    if (!user.musical_influences) return null;
+    return user.musical_influences.map((influence, index) => (
+      <View key={index} style={styles.tag}>
+        <Text style={styles.tagText}>{influence}</Text>
+      </View>
+    ));
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Profil Musicien</Text>
-        <View style={{ width: 24 }} />
-      </View>
-
       <ScrollView style={styles.content}>
-        <View style={styles.profileSection}>
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
-              <Ionicons name="person" size={40} color="#666" />
-            </View>
-          </View>
+        <View style={styles.profileHeader}>
+          <Image
+            source={user.avatar_url ? { uri: user.avatar_url } : require('../../assets/musicien.jpg')}
+            style={styles.avatar}
+          />
           <Text style={styles.username}>{user.username}</Text>
-          {user.instruments_played && (
-            <Text style={styles.instruments}>{user.instruments_played}</Text>
+          {user.location && (
+            <View style={styles.locationContainer}>
+              <Ionicons name="location-outline" size={16} color="#666" />
+              <Text style={styles.location}>{user.location}</Text>
+            </View>
           )}
         </View>
 
-        {user.description && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>À propos</Text>
-            <Text style={styles.description}>{user.description}</Text>
-          </View>
-        )}
-
-        <View style={styles.messageSection}>
-          <Text style={styles.sectionTitle}>Envoyer un message</Text>
-          <TextInput
-            style={styles.messageInput}
-            placeholder="Écrivez votre message..."
-            value={message}
-            onChangeText={setMessage}
-            multiline
-            numberOfLines={3}
-          />
-          <TouchableOpacity 
-            style={[styles.sendButton, isSending && styles.sendingButton]}
-            onPress={handleSendMessage}
-            disabled={isSending}
-          >
-            <Text style={styles.sendButtonText}>
-              {isSending ? 'Envoi...' : 'Envoyer'}
-            </Text>
-          </TouchableOpacity>
+        <View style={styles.descriptionContainer}>
+          <Text style={styles.description}>{user.description || 'Aucune description'}</Text>
         </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Instruments</Text>
+          <View style={styles.tagsContainer}>
+            {renderInstruments()}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Influences musicales</Text>
+          <View style={styles.tagsContainer}>
+            {renderMusicalInfluences()}
+          </View>
+        </View>
+
+        <TouchableOpacity 
+          style={styles.messageButton}
+          onPress={handleNavigateToSendMessage}
+        >
+          <Text style={styles.messageButtonText}>
+            Envoyer un message
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -139,95 +137,85 @@ const UserDetailScreen = ({ route, navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#FFFFFF',
   },
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#FFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
   content: {
     flex: 1,
   },
-  profileSection: {
+  profileHeader: {
     alignItems: 'center',
-    padding: 24,
-    backgroundColor: '#FFF',
-  },
-  avatarContainer: {
-    marginBottom: 16,
+    padding: 20,
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#F0F0F0',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    marginBottom: 16,
   },
   username: {
     fontSize: 24,
     fontWeight: '600',
     marginBottom: 8,
   },
-  instruments: {
-    fontSize: 16,
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  location: {
+    fontSize: 14,
     color: '#666',
+    marginLeft: 4,
+  },
+  descriptionContainer: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  description: {
+    fontSize: 16,
+    color: '#333',
+    lineHeight: 24,
   },
   section: {
-    padding: 16,
-    backgroundColor: '#FFF',
-    marginTop: 8,
+    padding: 20,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     marginBottom: 12,
+    color: '#00A693',
   },
-  description: {
-    fontSize: 16,
-    color: '#444',
-    lineHeight: 24,
-  },
-  messageSection: {
-    padding: 16,
-    backgroundColor: '#FFF',
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     marginTop: 8,
   },
-  messageInput: {
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: '#FFF',
-    minHeight: 100,
-    textAlignVertical: 'top',
+  tag: {
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginRight: 8,
+    marginBottom: 8,
   },
-  sendButton: {
+  tagText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  messageButton: {
     backgroundColor: '#00A693',
+    margin: 20,
     padding: 16,
-    borderRadius: 8,
+    borderRadius: 25,
     alignItems: 'center',
-    marginTop: 16,
   },
-  sendingButton: {
-    opacity: 0.7,
-  },
-  sendButtonText: {
-    color: '#FFF',
+  messageButtonText: {
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },

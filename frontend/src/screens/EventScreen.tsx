@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,33 +7,40 @@ import {
   FlatList,
   TouchableOpacity,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-
-interface Event {
-  id: string;
-  title: string;
-  location: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-}
+import eventService, { Event } from '../services/eventService';
 
 const EventScreen = () => {
   const navigation = useNavigation();
-  
-  const events: Event[] = [
-    {
-      id: '1',
-      title: 'EchoSphere',
-      location: 'Paris, 18ème',
-      date: '12 juin 2025',
-      startTime: '12h',
-      endTime: '15h',
-    },
-    // Ajoutez d'autres événements ici
-  ];
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    loadEvents();
+  }, []);
+
+  const loadEvents = async () => {
+    try {
+      const data = await eventService.getAllEvents();
+      setEvents(data);
+      setError(null);
+    } catch (err) {
+      setError('Erreur lors du chargement des événements');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredEvents = events.filter(event =>
+    event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    event.location.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const renderEventCard = ({ item }: { item: Event }) => (
     <TouchableOpacity style={styles.eventCard}>
@@ -41,7 +48,7 @@ const EventScreen = () => {
         <View style={styles.tagContainer}>
           <Text style={styles.tag}>Évènement</Text>
         </View>
-        <Text style={styles.date}>{item.date}</Text>
+        <Text style={styles.date}>{new Date(item.date).toLocaleDateString('fr-FR')}</Text>
       </View>
       <Text style={styles.title}>{item.title}</Text>
       <View style={styles.eventDetails}>
@@ -53,14 +60,27 @@ const EventScreen = () => {
           <Ionicons name="time-outline" size={16} color="#666" />
           <Text style={styles.time}>De {item.startTime} à {item.endTime}</Text>
         </View>
+        {item.description && (
+          <Text style={styles.description} numberOfLines={2}>
+            {item.description}
+          </Text>
+        )}
       </View>
     </TouchableOpacity>
   );
 
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#00A693" />
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Évènement</Text>
+        <Text style={styles.headerTitle}>Évènements</Text>
         <View style={styles.headerRight}>
           <TouchableOpacity
             onPress={() => navigation.navigate('CreateEvent' as never)}
@@ -79,18 +99,31 @@ const EventScreen = () => {
           <Ionicons name="search-outline" size={20} color="#666" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search"
+            placeholder="Rechercher un événement"
             placeholderTextColor="#666"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
           />
         </View>
       </View>
 
-      <FlatList
-        data={events}
-        renderItem={renderEventCard}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.eventList}
-      />
+      {error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadEvents}>
+            <Text style={styles.retryText}>Réessayer</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredEvents}
+          renderItem={renderEventCard}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.eventList}
+          onRefresh={loadEvents}
+          refreshing={loading}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -200,6 +233,40 @@ const styles = StyleSheet.create({
   time: {
     color: '#666',
     fontSize: 14,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    color: '#FF3B30',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: '#00A693',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  description: {
+    color: '#666',
+    fontSize: 14,
+    marginTop: 8,
   },
 });
 

@@ -74,6 +74,7 @@ const ProfileScreen = () => {
     try {
       setIsLoading(true);
       const response = await api.put('/users/me', {
+        email: profileData.email,
         username: profileData.username,
         description: profileData.description,
         instruments_played: profileData.instruments_played,
