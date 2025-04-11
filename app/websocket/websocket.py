@@ -51,6 +51,7 @@ async def websocket_endpoint(
                         if data["type"] == "ping":
                             # Répondre au ping
                             await websocket.send_json({"type": "pong"})
+                            logger.info(f"Pong envoyé à l'utilisateur {user.id}")
                             
                         elif data["type"] == "message":
                             # Créer et envoyer un nouveau message
@@ -66,6 +67,7 @@ async def websocket_endpoint(
                                     "type": "message_sent",
                                     "message_id": new_message.id
                                 })
+                                logger.info(f"Message envoyé par l'utilisateur {user.id}")
                                 
                             except Exception as e:
                                 logger.error(f"Erreur lors de l'envoi du message: {str(e)}")
@@ -84,6 +86,7 @@ async def websocket_endpoint(
                                     "type": "message_marked_read",
                                     "message_id": message_id
                                 })
+                                logger.info(f"Message marqué comme lu par l'utilisateur {user.id}")
                                 
                             except Exception as e:
                                 logger.error(f"Erreur lors du marquage du message: {str(e)}")
@@ -95,6 +98,7 @@ async def websocket_endpoint(
                         elif data["type"] == "get_unread_count":
                             # Envoyer le nombre de messages non lus
                             await manager.send_unread_messages_count(user.id)
+                            logger.info(f"Nombre de messages non lus envoyé à l'utilisateur {user.id}")
                             
                 except json.JSONDecodeError:
                     logger.error(f"Message invalide reçu de l'utilisateur {user.id}")

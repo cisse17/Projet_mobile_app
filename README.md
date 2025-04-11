@@ -1,332 +1,165 @@
-# API d'Authentification et Gestion des Utilisateurs
+# Projet Mobile App - Plateforme de Musique
 
-Cette API permet la gestion des utilisateurs et des événements avec des fonctionnalités d'authentification et de récupération des données.
+## 📋 Description
+Une application mobile permettant aux musiciens de se connecter, partager des événements musicaux et communiquer entre eux. Le projet comprend un backend FastAPI et un frontend React Native.
 
-## Prérequis
+## 🚀 Fonctionnalités Principales
 
+### Authentification
+- Inscription et connexion des utilisateurs
+- Gestion des tokens JWT
+- Profils utilisateurs personnalisables
+
+### Événements Musicaux
+- Création et gestion d'événements
+- Recherche d'événements
+- Participation aux événements
+- Système de notation des événements
+
+### Messagerie
+- Chat en temps réel via WebSocket
+- Messages privés entre utilisateurs
+- Notifications en temps réel
+- Marqueurs de lecture des messages
+
+### Profils Utilisateurs
+- Informations personnelles
+- Instruments joués
+- Historique des événements
+- Système de notation
+
+## 🛠️ Architecture Technique
+
+### Backend (FastAPI)
+- **Base de données**: PostgreSQL
+- **Authentification**: JWT
+- **WebSocket**: Communication en temps réel
+- **API REST**: Endpoints pour toutes les fonctionnalités
+- **Docker**: Containerisation de l'application
+
+### Frontend (React Native)
+- **Navigation**: React Navigation
+- **État**: Gestion d'état avec hooks
+- **API**: Axios pour les requêtes HTTP
+- **WebSocket**: Communication en temps réel
+- **Stockage**: AsyncStorage pour le stockage local
+
+## 📦 Installation
+
+### Prérequis
+- Docker et Docker Compose
+- Node.js et npm
 - Python 3.8+
-- PostgreSQL
-- Docker (optionnel)
 
-## Installation
-
-1. Clonez le repository
+### Backend
 ```bash
-git clone [URL_DU_REPO]
-cd [NOM_DU_PROJET]
-```
-
-2. Installez les dépendances
-```bash
+# Installation des dépendances
 pip install -r requirements.txt
-```
 
-3. Configurez les variables d'environnement
-Créez un fichier `.env` à la racine du projet avec les variables suivantes :
-```env
-DATABASE_URL=postgresql://user:password@localhost:5432/dbname
-```
+# Configuration de l'environnement
+cp .env.example .env
+# Éditer .env avec vos configurations
 
-4. Lancez l'application
-```bash
+# Lancer le serveur
 uvicorn app.main:app --reload
 ```
 
-## Documentation de l'API
-
-### Authentification
-
-#### Inscription (Register)
-```http
-POST /register
-```
-
-**Request Body:**
-```json
-{
-    "username": "string",
-    "email": "string",
-    "password": "string"
-}
-```
-
-**Response (200 OK):**
-```json
-{
-    "id": "integer",
-    "username": "string",
-    "email": "string"
-}
-```
-
-**Erreurs possibles:**
-- 400 Bad Request: Email déjà utilisé
-
-#### Connexion (Login)
-```http
-POST /login
-```
-
-**Request Body:**
-```json
-{
-    "email": "string",
-    "password": "string"
-}
-```
-
-**Response (200 OK):**
-```json
-{
-    "access_token": "string",
-    "token_type": "bearer"
-}
-```
-
-**Erreurs possibles:**
-- 401 Unauthorized: Identifiants invalides
-
-### Déconnexion
-```http
-POST /auth/logout
-Authorization: Bearer <token>
-```
-
-### Récupérer les informations de l'utilisateur connecté
-```http
-GET /auth/me
-Authorization: Bearer <token>
-```
-
-### Gestion des Utilisateurs
-
-#### Récupérer tous les utilisateurs
-```http
-GET /users/
-```
-
-**Response (200 OK):**
-```json
-[
-    {
-        "id": "integer",
-        "username": "string",
-        "email": "string"
-    },
-    ...
-]
-```
-
-#### Récupérer un utilisateur par ID
-```http
-GET /users/{user_id}
-```
-
-**Response (200 OK):**
-```json
-{
-    "id": "integer",
-    "username": "string",
-    "email": "string"
-}
-```
-
-**Erreurs possibles:**
-- 404 Not Found: Utilisateur non trouvé
-
-### Gestion des Événements
-
-#### Créer un événement
-```http
-POST /events/
-Authorization: Bearer votre_token_jwt
-```
-
-**Request Body:**
-```json
-{
-    "title": "string (unique)",
-    "description": "string",
-    "date": "string (format: YYYY-MM-DDTHH:MM:SS)",
-    "location": "string"
-}
-```
-
-**Response (200 OK):**
-```json
-{
-    "id": "integer",
-    "title": "string",
-    "description": "string",
-    "date": "string",
-    "location": "string",
-    "organizer_id": "integer"
-}
-```
-
-**Erreurs possibles:**
-- 400 Bad Request: Un événement avec ce titre existe déjà
-- 401 Unauthorized: Token JWT invalide ou manquant
-
-#### Récupérer tous les événements
-```http
-GET /events/
-```
-
-**Response (200 OK):**
-```json
-[
-    {
-        "id": "integer",
-        "title": "string",
-        "description": "string",
-        "date": "string",
-        "location": "string",
-        "organizer_id": "integer"
-    },
-    ...
-]
-```
-
-#### Récupérer un événement par ID
-```http
-GET /events/{event_id}
-```
-
-**Response (200 OK):**
-```json
-{
-    "id": "integer",
-    "title": "string",
-    "description": "string",
-    "date": "string",
-    "location": "string",
-    "organizer_id": "integer"
-}
-```
-
-**Erreurs possibles:**
-- 404 Not Found: Événement non trouvé
-
-## Messagerie
-
-### Envoyer un message
-```http
-POST /messages/
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-    "content": "Bonjour !",
-    "receiver_id": 2
-}
-```
-
-### Récupérer les messages reçus
-```http
-GET /messages/received?skip=0&limit=100
-Authorization: Bearer <token>
-```
-
-### Récupérer les messages envoyés
-```http
-GET /messages/sent?skip=0&limit=100
-Authorization: Bearer <token>
-```
-
-### Marquer un message comme lu
-```http
-PUT /messages/{message_id}/read
-Authorization: Bearer <token>
-```
-
-## Messagerie en Temps Réel (WebSocket)
-
-### Connexion WebSocket
-```javascript
-const socket = new WebSocket(`ws://your-api-url/ws/${token}`);
-
-socket.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    if (data.type === 'new_message') {
-        // Traiter le nouveau message
-        console.log('Nouveau message reçu:', data.message);
-    }
-};
-
-socket.onclose = (event) => {
-    console.log('Connexion WebSocket fermée:', event.code, event.reason);
-};
-```
-
-### Format des Messages WebSocket
-```json
-{
-    "type": "new_message",
-    "message": {
-        "id": 123,
-        "content": "Bonjour !",
-        "created_at": "2024-03-14T12:00:00Z",
-        "sender_id": 1,
-        "receiver_id": 2,
-        "is_read": false
-    }
-}
-```
-
-## Structure du Projet
-
-```
-app/
-├── database.py      # Configuration de la base de données
-├── main.py         # Point d'entrée de l'application
-├── models/         # Modèles de données
-│   └── models.py   # Définition des modèles SQLAlchemy
-├── routers/        # Routes de l'API
-│   ├── auth.py     # Routes d'authentification
-│   ├── users.py    # Routes de gestion des utilisateurs
-│   └── events.py   # Routes de gestion des événements
-├── schemas/        # Schémas Pydantic
-│   ├── schemas.py  # Schémas de validation
-│   └── user.py     # Schémas utilisateur
-└── utils/          # Utilitaires
-    └── utils.py    # Fonctions utilitaires
-```
-
-## Déploiement avec Docker
-
-1. Construisez l'image Docker
+### Frontend
 ```bash
-docker build -t api-auth .
+# Installation des dépendances
+cd frontend
+npm install
+
+# Configuration
+# Éditer frontend/src/config/api.ts avec l'URL de votre API
+
+# Lancer l'application
+npm start
 ```
 
-2. Lancez les conteneurs
+### Docker
 ```bash
+# Lancer tous les services
 docker-compose up -d
 ```
 
-## Technologies Utilisées
+## 🔧 Configuration
 
-- FastAPI
-- SQLAlchemy
-- PostgreSQL
-- Pydantic
-- Docker
-- Uvicorn
+### Variables d'Environnement
+```env
+# Backend
+DATABASE_URL=postgresql://user:password@localhost:5432/dbname
+SECRET_KEY=votre_secret_key
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
 
-## Sécurité
+# Frontend
+API_URL=http://localhost:8000
+```
 
-- Les mots de passe sont hachés avant d'être stockés
-- Validation des emails
-- Gestion des erreurs appropriée
-- Protection contre les attaques par injection SQL
-- Authentification JWT pour les routes protégées
-- Titres d'événements uniques
+## 📱 Fonctionnalités Détaillées
 
-## Contribution
+### Authentification
+- Inscription avec email et mot de passe
+- Connexion avec token JWT
+- Récupération de mot de passe
+- Gestion des sessions
 
+### Événements
+- Création d'événements avec titre, description, date
+- Recherche par date, lieu, type d'événement
+- Système de participation
+- Notation et commentaires
+
+### Messagerie
+- Chat en temps réel
+- Historique des conversations
+- Notifications push
+- Marqueurs de lecture
+
+### Profils
+- Informations personnelles
+- Instruments joués
+- Historique des événements
+- Système de notation
+
+## 🔒 Sécurité
+- Authentification JWT
+- Validation des données
+- Protection CSRF
+- Chiffrement des mots de passe
+
+## 📊 Base de Données
+- Utilisateurs
+- Événements
+- Messages
+- Participations
+- Notes
+
+## 🚀 Déploiement
+- Docker pour la containerisation
+- Configuration pour production
+- Variables d'environnement sécurisées
+- Logs et monitoring
+
+## 📚 Documentation API
+La documentation de l'API est disponible à `/docs` une fois le serveur lancé.
+
+## 🤝 Contribution
 1. Fork le projet
-2. Créez une branche pour votre fonctionnalité (`git checkout -b feature/AmazingFeature`)
+2. Créez une branche (`git checkout -b feature/AmazingFeature`)
 3. Committez vos changements (`git commit -m 'Add some AmazingFeature'`)
 4. Push vers la branche (`git push origin feature/AmazingFeature`)
-5. Ouvrez une Pull Request 
+5. Ouvrez une Pull Request
+
+## 📝 Licence
+Ce projet est sous licence MIT.
+
+## 👥 Auteurs
+- [Votre Nom]
+
+## 🙏 Remerciements
+- FastAPI
+- React Native
+- PostgreSQL
+- Docker

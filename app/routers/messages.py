@@ -21,7 +21,7 @@ async def send_message(
     message_service = MessageService(db)
     return await message_service.create_message(current_user.id, message)
 
-@router.get("/received", response_model=schemas.MessageListResponse)
+@router.get("/received", response_model=List[schemas.MessageResponse])
 def get_received_messages(
     skip: int = 0,
     limit: int = 100,

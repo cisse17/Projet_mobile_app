@@ -3,103 +3,73 @@ import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-// Configuration de l'API selon la plateforme
-const getApiBaseUrl = () => {
-  if (!__DEV__) {
-    return 'https://votre-api-production.com';
-  }
-  
-  // En développement, on utilise toujours l'IP du serveur
-  return 'http://192.168.1.31:8000';
-};
+// Configuration de l'API
+const SERVER_IP = '192.168.1.31';
+const SERVER_PORT = '8000';
 
-export const API_URL = getApiBaseUrl();
+export const API_URL = __DEV__ 
+  ? `http://${SERVER_IP}:${SERVER_PORT}`  // IP locale de votre machine
+  : 'https://votre-api-production.com';
 
 console.log('Configuration API:', {
-  baseURL: API_URL,
-  platform: Platform.OS,
-  version: Platform.Version,
-  isDev: __DEV__
+  isDev: __DEV__,
+  apiUrl: API_URL,
+  serverIp: SERVER_IP,
+  serverPort: SERVER_PORT
 });
 
 const api = axios.create({
   baseURL: API_URL,
+  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // timeout après 10 secondes
 });
 
-// Intercepteur pour ajouter le token JWT aux requêtes
+// Intercepteur pour ajouter le token aux requêtes
 api.interceptors.request.use(
   async (config) => {
-    try {
-      const token = await AsyncStorage.getItem('token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-        console.log('Détails requête API:', {
-          method: config.method?.toUpperCase(),
-          url: config.url,
-          headers: {
-            ...config.headers,
-            Authorization: 'Bearer ' + token.substring(0, 10) + '...'
-          },
-          timestamp: new Date().toISOString()
-        });
-      } else {
-        console.warn('⚠️ Requête API sans token:', {
-          method: config.method?.toUpperCase(),
-          url: config.url,
-          headers: config.headers,
-          timestamp: new Date().toISOString()
-        });
-      }
-    } catch (error) {
-      console.error('❌ Erreur lors de la récupération du token:', error);
+    const token = await AsyncStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      console.log('Token ajouté aux headers:', config.url);
+    } else {
+      console.warn('Aucun token disponible pour la requête:', config.url);
     }
     return config;
   },
   (error) => {
-    console.error('❌ Erreur dans l\'intercepteur de requête:', error);
+    console.error('Erreur dans l\'intercepteur de requête:', error);
     return Promise.reject(error);
   }
 );
 
-// Intercepteur pour gérer les réponses
+// Intercepteur pour gérer les erreurs
 api.interceptors.response.use(
   (response) => {
-    if (response.config.url === '/messages/received') {
-      console.log('📨 Réponse /messages/received:', {
-        status: response.status,
-        headers: response.headers,
-        data: response.data,
-        requestHeaders: response.config.headers,
-        timestamp: new Date().toISOString()
-      });
-    } else {
-      console.log('Réponse API reçue:', {
-        url: response.config.url,
-        status: response.status,
-        data: response.data,
-        method: response.config.method
-      });
-    }
+    console.log('Réponse API reçue:', {
+      url: response.config.url,
+      method: response.config.method,
+      status: response.status,
+      data: response.data
+    });
     return response;
   },
   async (error) => {
     console.error('Erreur API:', {
       url: error.config?.url,
+      method: error.config?.method,
       status: error.response?.status,
-      message: error.message,
-      data: error.response?.data
+      message: error.message
     });
 
     if (error.response?.status === 401) {
-      // Token expiré ou invalide
-      console.log('Token invalide ou expiré, déconnexion...');
+      console.log('Token expiré ou invalide, déconnexion...');
       await AsyncStorage.removeItem('token');
-      // Ici vous pouvez ajouter la logique pour rediriger vers la page de connexion
+      await AsyncStorage.removeItem('userId');
+      // Vous pouvez ajouter ici une redirection vers l'écran de connexion
     }
+
     return Promise.reject(error);
   }
 );
