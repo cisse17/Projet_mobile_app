@@ -45,24 +45,14 @@ const MessagesScreen = () => {
   const loadMessages = async () => {
     try {
       // Récupérer les messages
-      const { messages: receivedMessages, unread } = await messageService.getReceivedMessages();
+      const receivedMessages = await messageService.getReceivedMessages();
       const sentMessages = await messageService.getSentMessages();
       
-      console.log('Received messages brut:', JSON.stringify(receivedMessages));
-      console.log('All received messages:', receivedMessages);
-      console.log('All sent messages:', sentMessages);
-      
-      // Vérifier si les messages récupérés sont bien des tableaux
-      const validReceivedMessages = Array.isArray(receivedMessages) ? receivedMessages : [];
-      const validSentMessages = Array.isArray(sentMessages) ? sentMessages : [];
-      
-      console.log('Messages valides récupérés:', {
-        validReceived: validReceivedMessages.length,
-        validSent: validSentMessages.length
-      });
+      console.log('Received messages:', receivedMessages);
+      console.log('Sent messages:', sentMessages);
       
       // Combiner et trier les messages par date
-      const allMessages = [...validReceivedMessages, ...validSentMessages].sort(
+      const allMessages = [...receivedMessages, ...sentMessages].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
       
@@ -72,14 +62,16 @@ const MessagesScreen = () => {
       );
       
       console.log('Final messages count:', {
-        received: validReceivedMessages.length,
-        sent: validSentMessages.length,
+        received: receivedMessages.length,
+        sent: sentMessages.length,
         combined: allMessages.length,
         unique: uniqueMessages.length
       });
       
       setMessages(uniqueMessages);
-      setUnreadCount(unread);
+      // Compter les messages non lus
+      const unreadCount = receivedMessages.filter((msg: Message) => !msg.is_read).length;
+      setUnreadCount(unreadCount);
     } catch (error) {
       console.error('Error loading messages:', error);
       Alert.alert('Erreur', 'Impossible de charger les messages');

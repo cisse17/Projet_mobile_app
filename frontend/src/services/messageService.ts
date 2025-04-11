@@ -1,5 +1,5 @@
 import api from '../config/api';
-import { EventEmitter } from '../utils/eventEmitter';
+import EventEmitter from '../utils/eventEmitter';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface Message {
@@ -24,65 +24,22 @@ class MessageService {
 
   async getReceivedMessages() {
     try {
-      const token = await AsyncStorage.getItem('token');
-      console.log('Token récupéré pour getReceivedMessages:', token ? 'présent' : 'absent');
-      
       const response = await api.get('/messages/received');
-      
-      // Log pour debug
-      console.log('Réponse getReceivedMessages brute:', JSON.stringify(response.data).substring(0, 200) + '...');
-      
-      let messages = [];
-      let unread = 0;
-      
-      // Traiter la structure de réponse spécifique
-      if (response.data && typeof response.data === 'object') {
-        if (response.data.messages && Array.isArray(response.data.messages)) {
-          messages = response.data.messages;
-          unread = response.data.unread || 0;
-          console.log(`Messages reçus traités correctement: ${messages.length} messages`);
-        } else {
-          console.error('Structure de messages reçus inattendue:', response.data);
-        }
-      } else {
-        console.error('Réponse getReceivedMessages invalide:', typeof response.data);
-      }
-      
-      return {
-        messages,
-        unread
-      };
+      console.log('Réponse getReceivedMessages:', response.data);
+      return response.data;
     } catch (error: any) {
-      console.error('Erreur dans getReceivedMessages:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
-      // Retourner une valeur par défaut en cas d'erreur
-      return { messages: [], unread: 0 };
+      console.error('Error fetching received messages:', error.message);
+      return [];
     }
   }
 
   async getSentMessages() {
     try {
       const response = await api.get('/messages/sent');
-      
-      // Log pour debug
-      console.log('Réponse getSentMessages brute:', JSON.stringify(response.data).substring(0, 200) + '...');
-      
-      // Vérifier que la réponse est un tableau
-      let messages = [];
-      if (Array.isArray(response.data)) {
-        messages = response.data;
-        console.log(`Messages envoyés traités correctement: ${messages.length} messages`);
-      } else {
-        console.error('Structure de messages envoyés inattendue:', response.data);
-      }
-      
-      return messages;
+      console.log('Réponse getSentMessages:', response.data);
+      return response.data;
     } catch (error: any) {
       console.error('Error fetching sent messages:', error.message);
-      // Retourner une valeur par défaut en cas d'erreur
       return [];
     }
   }
@@ -114,9 +71,14 @@ class MessageService {
         return;
       }
 
-      const wsUrl = `ws://${api.defaults.baseURL?.replace('http://', '')}/ws/${token}`;
+      const wsUrl = `ws://localhost:8000/ws/${token}`;
       console.log('Tentative de connexion WebSocket avec URL:', wsUrl.replace(token, '****'));
       
+      if (this.ws) {
+        console.log('Fermeture de la connexion WebSocket existante');
+        this.ws.close();
+      }
+
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
@@ -127,7 +89,7 @@ class MessageService {
       this.ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log('Message WebSocket reçu dans MessageService:', data);
+          console.log('Message WebSocket reçu:', data);
           this.messageHandlers.forEach(handler => handler(data));
         } catch (error) {
           console.error('Error parsing WebSocket message:', error);
@@ -136,10 +98,11 @@ class MessageService {
 
       this.ws.onerror = (error) => {
         console.error('WebSocket error:', error);
+        this.scheduleReconnect();
       };
 
-      this.ws.onclose = () => {
-        console.log('WebSocket disconnected');
+      this.ws.onclose = (event) => {
+        console.log('WebSocket disconnected:', event.code, event.reason);
         this.cleanup();
         this.scheduleReconnect();
       };
@@ -155,6 +118,7 @@ class MessageService {
     this.pingInterval = setInterval(() => {
       if (this.ws?.readyState === WebSocket.OPEN) {
         this.ws.send(JSON.stringify({ type: 'ping' }));
+        console.log('Ping envoyé');
       }
     }, 30000);
   }
@@ -173,7 +137,7 @@ class MessageService {
   private scheduleReconnect() {
     if (!this.reconnectTimeout) {
       this.reconnectTimeout = setTimeout(() => {
-        console.log('Attempting to reconnect WebSocket...');
+        console.log('Tentative de reconnexion WebSocket...');
         this.connectWebSocket();
       }, 5000);
     }

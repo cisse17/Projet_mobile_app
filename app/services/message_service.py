@@ -68,18 +68,8 @@ class MessageService:
                 .limit(limit)\
                 .all()
 
-            # Compter les messages non lus
-            unread_count = self.db.query(models.Message)\
-                .filter(
-                    models.Message.receiver_id == user_id,
-                    models.Message.is_read == False
-                )\
-                .count()
-
-            return {
-                "messages": messages,
-                "unread": unread_count
-            }
+            # Convertir les messages en dictionnaires
+            return [message.to_dict() for message in messages]
 
         except Exception as e:
             logger.error(f"Erreur lors de la récupération des messages reçus: {str(e)}")
