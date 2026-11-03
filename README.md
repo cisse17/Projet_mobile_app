@@ -156,7 +156,7 @@ La documentation de l'API est disponible à `/docs` une fois le serveur lancé.
 Ce projet est sous licence MIT.
 
 ## 👥 Auteurs
-- [Votre Nom]
+- [Bassirou Chef d'équipe]
 
 ## 🙏 Remerciements
 - FastAPI
